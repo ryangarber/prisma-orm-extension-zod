@@ -172,7 +172,7 @@ model User {
 			contract.storage.namespaces.public.entries.table.users.columns.profile;
 		expect(column.nullable).toBe(true);
 		expect(column.codecId).toBe("zod/json@1");
-		const params = contract.storage.types[column.typeRef].typeParams;
+		const params = column.typeParams;
 		expect(params).toEqual(extension.column("Profile").typeParams);
 		const codec = extension.descriptor.factory(params)();
 		await expect(codec.fromWire('{"name":"Ada","age":"36"}')).resolves.toEqual({
