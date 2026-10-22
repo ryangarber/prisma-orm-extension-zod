@@ -16,26 +16,28 @@ it("preserves schema input and output types", () => {
 	type Transformed = ReturnType<
 		ReturnType<typeof extension.column<"transformed">>["codecFactory"]
 	>;
-	expectTypeOf<Parameters<Transformed["encode"]>[0]>().toEqualTypeOf<string>();
+	expectTypeOf<Parameters<Transformed["toWire"]>[0]>().toEqualTypeOf<string>();
 	expectTypeOf<
-		Awaited<ReturnType<Transformed["decode"]>>
+		Awaited<ReturnType<Transformed["fromWire"]>>
 	>().toEqualTypeOf<number>();
 	expectTypeOf<
-		Parameters<Transformed["encodeJson"]>[0]
+		Parameters<Transformed["toDataTypeValue"]>[0]
 	>().toEqualTypeOf<string>();
-	expectTypeOf<ReturnType<Transformed["decodeJson"]>>().toEqualTypeOf<number>();
+	expectTypeOf<
+		ReturnType<Transformed["fromDataTypeValue"]>
+	>().toEqualTypeOf<number>();
 	type Branded = ReturnType<
 		ReturnType<typeof extension.column<"branded">>["codecFactory"]
 	>;
-	expectTypeOf<Parameters<Branded["encode"]>[0]>().toEqualTypeOf<string>();
-	expectTypeOf<Awaited<ReturnType<Branded["decode"]>>>().toEqualTypeOf<
+	expectTypeOf<Parameters<Branded["toWire"]>[0]>().toEqualTypeOf<string>();
+	expectTypeOf<Awaited<ReturnType<Branded["fromWire"]>>>().toEqualTypeOf<
 		z.output<typeof branded>
 	>();
 	type Literal = ReturnType<
 		ReturnType<typeof extension.column<"literal">>["codecFactory"]
 	>;
 	expectTypeOf<
-		Awaited<ReturnType<Literal["decode"]>>
+		Awaited<ReturnType<Literal["fromWire"]>>
 	>().toEqualTypeOf<"hello">();
 	// @ts-expect-error Unknown registration key
 	extension.column("missing");

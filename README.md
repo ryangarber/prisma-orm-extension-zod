@@ -41,7 +41,7 @@ Use `zod.Json("Profile")` in a `.prisma` contract. The file must start with `// 
 ```prisma
 // use prisma-8
 model User {
-  id      String @id @default(uuid())
+  id      String @id @onCreate(uuid())
   profile zod.Json("Profile")
 
   @@map("users")
@@ -112,12 +112,15 @@ Review the database plan before applying it. For migration files and deployment 
 ```ts
 // db.ts
 import postgres from "@prisma/orm-postgres/runtime";
+import { contractFromJson } from "@prisma/orm-postgres/static";
 import type { Contract } from "./contract.d";
 import contractJson from "./contract.json" with { type: "json" };
 import { zodExtension } from "./zod-extension";
 
-export const db = postgres<Contract>({
-  contractJson,
+export const contract = contractFromJson<Contract>(contractJson);
+
+export const db = postgres({
+  contract,
   url: process.env.DATABASE_URL,
   extensions: [zodExtension.runtime],
 });
@@ -147,7 +150,7 @@ Transforms are not inverted and transformed output is not stored. This also appl
 
 The original schema is registered at runtime, rather than converted to JSON Schema. This preserves custom refinements, preprocessors, transforms, codecs, and lazy types without serializing executable functions. Changing a schema requires considering existing data and re-emitting the contract; schema code changes are not captured by the contract hash.
 
-Zod Classic and Mini types are accepted through `zod/v4/core`'s `$ZodType`. Query-time encode/decode support async schemas. Prisma's synchronous `encodeJson`/`decodeJson` hooks cannot run async schemas; these throw for async refinements/transforms, including when Prisma uses those hooks for nested JSON results or contract defaults. Use synchronous schemas for those paths.
+Zod Classic and Mini types are accepted through `zod/v4/core`'s `$ZodType`. Query-time encode/decode support async schemas. Prisma's synchronous `toDataTypeValue`/`fromDataTypeValue` hooks cannot run async schemas; these throw for async refinements/transforms, including when Prisma uses those hooks for contract defaults. Use synchronous schemas for those paths.
 
 ## Native JSON storage and schema hydration
 

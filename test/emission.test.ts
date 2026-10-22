@@ -40,7 +40,7 @@ it.each(["ts", "prisma"])(
 				join(directory, "contract.prisma"),
 				`// use prisma-8
 model User {
-  id String @id @default(uuid())
+  id String @id @onCreate(uuid())
   profile zod.Json("Profile")
   @@map("users")
 }
@@ -175,7 +175,7 @@ model User {
 		const params = contract.storage.types[column.typeRef].typeParams;
 		expect(params).toEqual(extension.column("Profile").typeParams);
 		const codec = extension.descriptor.factory(params)();
-		await expect(codec.decode('{"name":"Ada","age":"36"}')).resolves.toEqual({
+		await expect(codec.fromWire('{"name":"Ada","age":"36"}')).resolves.toEqual({
 			name: "Ada",
 			age: 36,
 		});

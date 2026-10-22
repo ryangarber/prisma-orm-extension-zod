@@ -85,13 +85,14 @@ namespace ${schema} {
 				`
 import assert from "node:assert/strict";
 import postgres from "@prisma/orm-postgres/runtime";
+import { contractFromJson } from "@prisma/orm-postgres/static";
 import { z } from "zod";
 import { createZodExtension, defineZodSchema } from "../dist/column-types.mjs";
 const zData = z.object({ createdAt: z.date(), unknown: z.unknown(), missing: z.string().optional() });
 import { PlainDateTime, zPlainDateTime } from "temporal-zod";
 import contractJson from "./contract.json" with { type: "json" };
 const extension = createZodExtension({ Profile: defineZodSchema(z.object({ name: z.string(), age: z.string().transform(Number) })), Data: defineZodSchema(zData), DateTime: defineZodSchema(zPlainDateTime), Date: defineZodSchema(z.date()) }, { module: "./schemas", export: "SchemaTypes" });
-const db = postgres({ contractJson, url: process.env.ZOD_TEST_DATABASE_URL, extensions: [extension.runtime], verifyMarker: false });
+const db = postgres({ contract: contractFromJson(contractJson), url: process.env.ZOD_TEST_DATABASE_URL, extensions: [extension.runtime], verifyMarker: false });
 try {
   const users = db.orm[${JSON.stringify(schema)}].User;
   await users.create({ id: "one", profile: { name: "Ada", age: "36" }, optional: null, data: null, dateTime: null, date: null });

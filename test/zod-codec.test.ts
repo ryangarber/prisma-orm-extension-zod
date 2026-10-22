@@ -1,3 +1,4 @@
+import { pgJsonb } from "@prisma/orm-postgres/target/data-types";
 import { z } from "zod";
 import * as mini from "zod/mini";
 import {
@@ -17,37 +18,41 @@ function setup<S extends z.core.$ZodType>(schema: S) {
 
 it("validates both writes and reads", async () => {
 	const { codec } = setup(z.object({ count: z.number().int().positive() }));
-	await expect(codec.encode({ count: 2 })).resolves.toBe('{"count":2}');
-	await expect(codec.decode('{"count":2}')).resolves.toEqual({ count: 2 });
-	await expect(codec.encode({ count: -1 })).rejects.toThrow();
-	await expect(codec.decode('{"count":-1}')).rejects.toThrow();
-	expect(() => codec.encodeJson({ count: -1 })).toThrow();
-	expect(() => codec.decodeJson({ count: -1 })).toThrow();
+	await expect(codec.toWire({ count: 2 })).resolves.toBe('{"count":2}');
+	await expect(codec.fromWire('{"count":2}')).resolves.toEqual({ count: 2 });
+	await expect(codec.toWire({ count: -1 })).rejects.toThrow();
+	await expect(codec.fromWire('{"count":-1}')).rejects.toThrow();
+	expect(() => codec.toDataTypeValue({ count: -1 })).toThrow();
+	expect(() =>
+		codec.fromDataTypeValue(pgJsonb.valueFrom({ count: -1 }, {})),
+	).toThrow();
 });
 
 it("persists input and applies non-idempotent transforms once on each read", async () => {
 	const { codec } = setup(z.string().transform((value) => `${value}!`));
-	const wire = await codec.encode("hello");
+	const wire = await codec.toWire("hello");
 	expect(wire).toBe('"hello"');
-	await expect(codec.decode(wire)).resolves.toBe("hello!");
-	expect(codec.decodeJson(codec.encodeJson("hello"))).toBe("hello!");
+	await expect(codec.fromWire(wire)).resolves.toBe("hello!");
+	expect(codec.fromDataTypeValue(codec.toDataTypeValue("hello"))).toBe(
+		"hello!",
+	);
 });
 
 it.each(['"hello"', "true", "null", "42", '{"a":1}'])(
 	"decodes JSONB string wire %s exactly once",
 	async (value) => {
 		const { codec } = setup(z.string());
-		await expect(codec.decode(JSON.stringify(value))).resolves.toBe(value);
-		expect(codec.decodeJson(value)).toBe(value);
+		await expect(codec.fromWire(JSON.stringify(value))).resolves.toBe(value);
+		expect(codec.fromDataTypeValue(pgJsonb.valueFrom(value, {}))).toBe(value);
 	},
 );
 
 it("distinguishes JSONB strings from other JSONB scalar wires", async () => {
 	const { codec } = setup(z.string());
-	await expect(codec.decode('"hello"')).resolves.toBe("hello");
-	await expect(codec.decode("true")).rejects.toThrow();
-	await expect(codec.decode("42")).rejects.toThrow();
-	await expect(codec.decode("not JSON")).rejects.toThrow(SyntaxError);
+	await expect(codec.fromWire('"hello"')).resolves.toBe("hello");
+	await expect(codec.fromWire("true")).rejects.toThrow();
+	await expect(codec.fromWire("42")).rejects.toThrow();
+	await expect(codec.fromWire("not JSON")).rejects.toThrow(SyntaxError);
 });
 
 it("preserves refinements after serialized type params are reloaded", async () => {
@@ -58,8 +63,8 @@ it("preserves refinements after serialized type params are reloaded", async () =
 	);
 	const loaded = extensionFor({ value: binding });
 	const codec = loaded.descriptor.factory(params)();
-	await expect(codec.encode("bad")).rejects.toThrow();
-	await expect(codec.decode('"ok!"')).resolves.toBe("ok!");
+	await expect(codec.toWire("bad")).rejects.toThrow();
+	await expect(codec.fromWire('"ok!"')).resolves.toBe("ok!");
 	expect(() =>
 		loaded.descriptor.factory({ ...params, export: "Other" }),
 	).toThrow("mismatched");
@@ -70,25 +75,29 @@ it("preserves refinements after serialized type params are reloaded", async () =
 
 it("supports async validation and transforms at the query boundary", async () => {
 	const { codec } = setup(z.string().transform(async (s) => s.length));
-	await expect(codec.encode("abcd")).resolves.toBe('"abcd"');
-	await expect(codec.decode('"abcd"')).resolves.toBe(4);
-	expect(() => codec.decodeJson("abcd")).toThrow();
-	expect(() => codec.encodeJson("abcd")).toThrow();
+	await expect(codec.toWire("abcd")).resolves.toBe('"abcd"');
+	await expect(codec.fromWire('"abcd"')).resolves.toBe(4);
+	expect(() =>
+		codec.fromDataTypeValue(pgJsonb.valueFrom("abcd", {})),
+	).toThrow();
+	expect(() => codec.toDataTypeValue("abcd")).toThrow();
 });
 
 it("supports Mini, unions, lazy schemas and defaults", async () => {
-	await expect(setup(mini.string()).codec.decode('"mini"')).resolves.toBe(
+	await expect(setup(mini.string()).codec.fromWire('"mini"')).resolves.toBe(
 		"mini",
 	);
 	const recursive = z.lazy(() => z.object({ name: z.string() }));
-	await expect(setup(recursive).codec.decode('{"name":"a"}')).resolves.toEqual({
+	await expect(
+		setup(recursive).codec.fromWire('{"name":"a"}'),
+	).resolves.toEqual({
 		name: "a",
 	});
 	await expect(
-		setup(z.union([z.number(), z.string()])).codec.decode("2"),
+		setup(z.union([z.number(), z.string()])).codec.fromWire("2"),
 	).resolves.toBe(2);
 	await expect(
-		setup(z.object({ name: z.string().default("guest") })).codec.decode("{}"),
+		setup(z.object({ name: z.string().default("guest") })).codec.fromWire("{}"),
 	).resolves.toEqual({ name: "guest" });
 });
 
@@ -96,7 +105,9 @@ it("keeps emitter callbacks bound and resolves both type-map positions", () => {
 	const { extension } = setup(z.string().transform(Number));
 	const { factory, renderInputType, renderOutputType } = extension.descriptor;
 	const params = extension.column("value").typeParams;
-	expect(factory(params)().decodeJson("36")).toBe(36);
+	expect(factory(params)().fromDataTypeValue(pgJsonb.valueFrom("36", {}))).toBe(
+		36,
+	);
 	expect(renderInputType(params)).toBe(
 		'ZodTypes["zod/json@1"]["schemas"]["value"]["input"]',
 	);
@@ -126,14 +137,14 @@ it("accepts Zod codecs without reversing their transformations", async () => {
 		encode: String,
 	});
 	const { codec } = setup(schema);
-	await expect(codec.encode("12")).resolves.toBe('"12"');
-	await expect(codec.decode('"12"')).resolves.toBe(12);
+	await expect(codec.toWire("12")).resolves.toBe('"12"');
+	await expect(codec.fromWire('"12"')).resolves.toBe(12);
 });
 
 it("omits undefined object fields using native JSON semantics", async () => {
 	const { codec } = setup(z.object({ a: z.string().optional() }));
 	const value = { a: undefined };
-	expect(await codec.encode(value)).toBe("{}");
-	expect(codec.encodeJson(value)).toBe(value);
-	expect(await codec.decode("{}")).toStrictEqual({});
+	expect(await codec.toWire(value)).toBe("{}");
+	expect(codec.toDataTypeValue(value).value).toBe(value);
+	expect(await codec.fromWire("{}")).toStrictEqual({});
 });

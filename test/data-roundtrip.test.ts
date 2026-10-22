@@ -1,8 +1,10 @@
+import { pgJsonb } from "@prisma/orm-postgres/target/data-types";
 import {
 	PlainDateTime,
 	zPlainDateTime,
 	zPlainDateTimeInstance,
 } from "temporal-zod";
+
 import { z } from "zod";
 import {
 	createZodExtension,
@@ -29,13 +31,17 @@ it.each(["2026-09-12T13:45:30.123456789", "2024-02-29T00:00:00"])(
 			for (const value of [iso, date]) {
 				const input = schema === zPlainDateTime ? value : { dates: [value] };
 				const expected = schema.parse(input);
-				expect(await codec.decode(await codec.encode(input))).toEqual(expected);
-				expect(codec.decodeJson(codec.encodeJson(input))).toEqual(expected);
+				expect(await codec.fromWire(await codec.toWire(input))).toEqual(
+					expected,
+				);
+				expect(codec.fromDataTypeValue(codec.toDataTypeValue(input))).toEqual(
+					expected,
+				);
 			}
 		}
 		expect(
-			await codecFor(zPlainDateTimeInstance).decode(
-				await codecFor(zPlainDateTimeInstance).encode(date),
+			await codecFor(zPlainDateTimeInstance).fromWire(
+				await codecFor(zPlainDateTimeInstance).toWire(date),
 			),
 		).toEqual(date);
 	},
@@ -43,7 +49,9 @@ it.each(["2026-09-12T13:45:30.123456789", "2024-02-29T00:00:00"])(
 
 it("rejects invalid Temporal values", async () => {
 	const codec = codecFor(zPlainDateTime);
-	await expect(codec.encode("2026-02-30T00:00:00")).rejects.toThrow();
-	await expect(codec.decode("not a date")).rejects.toThrow();
-	expect(() => codec.decodeJson("not a date")).toThrow();
+	await expect(codec.toWire("2026-02-30T00:00:00")).rejects.toThrow();
+	await expect(codec.fromWire("not a date")).rejects.toThrow();
+	expect(() =>
+		codec.fromDataTypeValue(pgJsonb.valueFrom("not a date", {})),
+	).toThrow();
 });

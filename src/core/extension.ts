@@ -1,6 +1,7 @@
 import { column } from "@prisma/orm-postgres/components/codec";
 import type { SqlControlExtensionDescriptor } from "@prisma/orm-postgres/family/control";
 import type { SqlRuntimeExtensionDescriptor } from "@prisma/orm-postgres/family-runtime";
+import { pgText } from "@prisma/orm-postgres/target/data-types";
 import type { CodecTypes } from "../exports/codec-types";
 import {
 	ZOD_CODEC_ID,
@@ -43,7 +44,7 @@ export function createZodExtension<
 				zod: {
 					Json: {
 						kind: "typeConstructor",
-						args: [{ kind: "string", name: "key" }],
+						args: [{ kind: "value", dataType: pgText.id, name: "key" }],
 						output: {
 							codecId: ZOD_CODEC_ID,
 							nativeType: ZOD_NATIVE_TYPE,

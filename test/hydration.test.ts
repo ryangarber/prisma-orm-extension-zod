@@ -1,3 +1,4 @@
+import { pgJsonb } from "@prisma/orm-postgres/target/data-types";
 import { Temporal } from "ponyfill-temporal";
 import { z } from "zod";
 import * as mini from "zod/mini";
@@ -26,16 +27,16 @@ it("delegates native storage unchanged and never guesses types in unknown data",
 		marker: { $prismaZod: "devalue@1", value: ["unchanged"] },
 	};
 	const codec = codecFor(z.unknown());
-	expect(codec.encodeJson(value)).toBe(value);
-	expect(await codec.encode(value)).toBe(JSON.stringify(value));
+	expect(codec.toDataTypeValue(value).value).toBe(value);
+	expect(await codec.toWire(value)).toBe(JSON.stringify(value));
 	expect(
-		await codec.decode(JSON.parse(await codec.encode(value))),
+		await codec.fromWire(JSON.parse(await codec.toWire(value))),
 	).toStrictEqual(JSON.parse(JSON.stringify(value)));
 	const cycle: Record<string, unknown> = {};
 	// biome-ignore lint/complexity/useLiteralKeys: index signature
 	cycle["self"] = cycle;
-	await expect(codec.encode(cycle)).rejects.toThrow();
-	await expect(codec.encode(1n)).rejects.toThrow();
+	await expect(codec.toWire(cycle)).rejects.toThrow();
+	await expect(codec.toWire(1n)).rejects.toThrow();
 });
 
 it("hydrates nested schemas while preserving absent keys, null and unknown strings", async () => {
@@ -70,8 +71,10 @@ it("hydrates nested schemas while preserving absent keys, null and unknown strin
 		extra: date,
 	};
 	const codec = codecFor(schema);
-	expect(await codec.decode(stored)).toStrictEqual(expected);
-	expect(codec.decodeJson(stored)).toStrictEqual(expected);
+	expect(await codec.fromWire(stored)).toStrictEqual(expected);
+	expect(codec.fromDataTypeValue(pgJsonb.valueFrom(stored, {}))).toStrictEqual(
+		expected,
+	);
 	expect(stored.date).toBe(iso);
 	expect(schema.safeParse(stored).success).toBe(false);
 });
@@ -97,7 +100,7 @@ it("retains union ordering, discriminators, intersections and recursion", async 
 		both: { a: iso, b: iso },
 		tree: { date: iso, children: [{ date: iso, children: [] }] },
 	};
-	expect(await codecFor(schema).decode(input)).toStrictEqual({
+	expect(await codecFor(schema).fromWire(input)).toStrictEqual({
 		...input,
 		hydrated: date,
 		tagged: { kind: "date", value: date },
@@ -122,7 +125,7 @@ it("preserves wrappers, refinements, defaults and forward-only transforms", asyn
 		readonly: z.object({ date: z.date() }).readonly(),
 	});
 	const codec = codecFor(schema);
-	const result = await codec.decode({
+	const result = await codec.fromWire({
 		date: iso,
 		nullish: null,
 		caught: "bad",
@@ -138,7 +141,7 @@ it("preserves wrappers, refinements, defaults and forward-only transforms", asyn
 	expect(calls).toBe(1);
 	expect(Object.isFrozen((result as { readonly: object }).readonly)).toBe(true);
 	await expect(
-		codec.decode({ date: "2025-01-01", readonly: { date: iso } }),
+		codec.fromWire({ date: "2025-01-01", readonly: { date: iso } }),
 	).rejects.toMatchObject({
 		issues: [expect.objectContaining({ path: ["date"] })],
 	});
@@ -146,9 +149,13 @@ it("preserves wrappers, refinements, defaults and forward-only transforms", asyn
 
 it("supports Mini and Date instance schemas", () => {
 	expect(
-		codecFor(mini.object({ date: mini.date() })).decodeJson({ date: iso }),
+		codecFor(mini.object({ date: mini.date() })).fromDataTypeValue(
+			pgJsonb.valueFrom({ date: iso }, {}),
+		),
 	).toStrictEqual({ date });
-	expect(codecFor(z.instanceof(Date)).decodeJson(iso)).toEqual(date);
+	expect(
+		codecFor(z.instanceof(Date)).fromDataTypeValue(pgJsonb.valueFrom(iso, {})),
+	).toEqual(date);
 });
 
 it.each([
@@ -163,10 +170,12 @@ it.each([
 ] as const)("hydrates %s from its schema constructor", async (cls, text) => {
 	const value = cls.from(text);
 	const codec = codecFor(z.object({ value: z.instanceof(cls) }));
-	const wire = await codec.encode({ value });
+	const wire = await codec.toWire({ value });
 	expect(wire).toBe(JSON.stringify({ value }));
-	expect(await codec.decode(JSON.parse(wire))).toEqual({ value });
-	expect(codec.decodeJson(JSON.parse(wire))).toEqual({ value });
+	expect(await codec.fromWire(JSON.parse(wire))).toEqual({ value });
+	expect(
+		codec.fromDataTypeValue(pgJsonb.valueFrom(JSON.parse(wire), {})),
+	).toEqual({ value });
 });
 
 it("leaves application-defined representations to codecs and transforms", async () => {
@@ -176,13 +185,13 @@ it("leaves application-defined representations to codecs and transforms", async 
 	});
 	const input = { count: "9007199254740993", at: "2026-09-12T12:00:00" };
 	const codec = codecFor(schema);
-	expect(await codec.encode(input)).toBe(JSON.stringify(input));
-	expect(await codec.decode(input)).toEqual({
+	expect(await codec.toWire(input)).toBe(JSON.stringify(input));
+	expect(await codec.fromWire(input)).toEqual({
 		count: 9007199254740993n,
 		at: Temporal.PlainDateTime.from(input.at),
 	});
 	const opaque = codecFor(z.custom<Date>((v) => v instanceof Date));
-	await expect(opaque.decode(iso)).rejects.toThrow();
+	await expect(opaque.fromWire(iso)).rejects.toThrow();
 });
 
 it("hydrates preprocess targets and recursive object getters", async () => {
@@ -194,6 +203,9 @@ it("hydrates preprocess targets and recursive object getters", async () => {
 	});
 	const codec = codecFor(z.preprocess((v) => v, tree));
 	expect(
-		await codec.decode({ date: iso, children: [{ date: iso, children: [] }] }),
+		await codec.fromWire({
+			date: iso,
+			children: [{ date: iso, children: [] }],
+		}),
 	).toEqual({ date, children: [{ date, children: [] }] });
 });

@@ -1,6 +1,12 @@
-import { CodecImpl } from "@prisma/orm-postgres/components/codec";
+import {
+	CodecImpl,
+	type DataTypeValue,
+} from "@prisma/orm-postgres/components/codec";
 import type { JsonValue } from "@prisma/orm-postgres/contract/types";
-import type { ProjectionExpr } from "@prisma/orm-postgres/relational-core/ast";
+import {
+	CastExpr,
+	type ProjectionExpr,
+} from "@prisma/orm-postgres/relational-core/ast";
 import { PostgresCodecDescriptor } from "@prisma/orm-postgres/target/codec-descriptor";
 import { postgresCodecRegistry } from "@prisma/orm-postgres/target/codecs";
 import { pgJsonb } from "@prisma/orm-postgres/target/data-types";
@@ -39,24 +45,24 @@ export class ZodCodec<S extends $ZodType> extends CodecImpl<
 		descriptor: ZodDescriptor,
 		private readonly binding: ZodSchema<S>,
 	) {
-		super(descriptor);
+		super(descriptor, pgJsonb);
 		this.readSchema = hydrationSchema(binding.schema);
 	}
 	private readonly readSchema: $ZodType;
-	async encode(value: input<S>): Promise<string> {
+	async toWire(value: input<S>): Promise<string> {
 		await parseAsync(this.binding.schema, value);
-		return jsonb.encode(value, {}) as Promise<string>;
+		return jsonb.toWire(value, {}) as Promise<string>;
 	}
-	async decode(wire: string | JsonValue): Promise<output<S>> {
-		const value = await jsonb.decode(wire, {});
+	async fromWire(wire: string | JsonValue): Promise<output<S>> {
+		const value = await jsonb.fromWire(wire, {});
 		return parseAsync(this.readSchema, value) as Promise<output<S>>;
 	}
-	encodeJson(value: input<S>): JsonValue {
+	toDataTypeValue(value: input<S>): DataTypeValue {
 		parse(this.binding.schema, value);
-		return jsonb.encodeJson(value);
+		return jsonb.toDataTypeValue(value);
 	}
-	decodeJson(value: JsonValue): output<S> {
-		return parse(this.readSchema, value) as output<S>;
+	fromDataTypeValue(value: DataTypeValue): output<S> {
+		return parse(this.readSchema, value.value) as output<S>;
 	}
 }
 
@@ -78,8 +84,9 @@ export class ZodDescriptor extends PostgresCodecDescriptor<ZodTypeParams> {
 	) {
 		super();
 	}
+	// Match pg/jsonb: includes read the printed text through fromWire, like plain rows.
 	protected override jsonProjection(expression: ProjectionExpr) {
-		return expression;
+		return CastExpr.as(expression, "text");
 	}
 	private lookup(params: ZodTypeParams): ZodSchema {
 		const binding = Object.hasOwn(this.schemas, params.key)
