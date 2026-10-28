@@ -1,10 +1,10 @@
 # Prisma 8 Zod extension
 
-Zod 4 validation and separate write/read types for PostgreSQL `jsonb` columns, based on Prisma's official Arktype extension. Currently `@prisma/orm-postgres@8.0.0-rc.20`.
+Zod 4 validation and separate write/read types for PostgreSQL `jsonb` columns, based on Prisma's official Arktype extension. Currently `@prisma/orm-postgres@8.0.0-rc.21`.
 
 ```sh
-pnpm add @ryangarber/prisma-orm-extension-zod zod @prisma/orm-postgres@8.0.0-rc.20
-pnpm add -D @prisma/orm-toolchain@8.0.0-rc.20
+pnpm add @ryangarber/prisma-orm-extension-zod zod @prisma/orm-postgres@8.0.0-rc.21
+pnpm add -D @prisma/orm-toolchain@8.0.0-rc.21
 ```
 
 ## Define schemas and register the extension
@@ -70,11 +70,11 @@ import { zodExtension } from "./zod-extension";
 
 export const contract = defineContract(
   { extensions: { zod: zodExtension.pack } },
-  ({ field, model }) => ({
+  ({ field, model, gen, type }) => ({
     models: {
       User: model("User", {
         fields: {
-          id: field.id.uuidv4String(),
+          id: field.column(type.UuidString()).id().onCreate(gen.uuid()),
           profile: field.column(zodExtension.column("Profile")),
         },
       }).sql({ table: "users" }),

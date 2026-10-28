@@ -19,11 +19,11 @@ it.each(["ts", "prisma"])(
 		});
 		const contract = defineContract(
 			{ extensions: { zod: extension.pack } },
-			({ field, model }) => ({
+			({ field, model, gen, type }) => ({
 				models: {
 					User: model("User", {
 						fields: {
-							id: field.id.uuidv4String(),
+							id: field.column(type.UuidString()).id().onCreate(gen.uuid()),
 							profile: field.column(extension.column("Profile")),
 						},
 					}).sql({ table: "users" }),

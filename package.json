@@ -13,6 +13,7 @@
 	],
 	"keywords": [
 		"prisma",
+		"prisma-orm-extension",
 		"postgres",
 		"zod"
 	],
@@ -38,12 +39,12 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.6.2",
-		"@prisma/orm-postgres": "8.0.0-rc.20",
-		"@prisma/orm-toolchain": "8.0.0-rc.20",
+		"@biomejs/biome": "^2.6.3",
+		"@prisma/orm-postgres": "8.0.0-rc.21",
+		"@prisma/orm-toolchain": "8.0.0-rc.21",
 		"@types/node": "^26.6.5",
 		"temporal-zod": "0.8.0",
-		"tsdown": "^0.23.1",
+		"tsdown": "^0.23.2",
 		"typescript": "^7.0.2",
 		"vitest": "^5.0.5"
 	},
@@ -51,7 +52,7 @@
 	"devEngines": {
 		"runtime": {
 			"name": "node",
-			"version": "^24.0.0",
+			"version": "^24.22.2",
 			"onFail": "download"
 		}
 	},
@@ -60,6 +61,6 @@
 		"zod": "^4.6.7"
 	},
 	"peerDependencies": {
-		"@prisma/orm-postgres": "8.0.0-rc.20"
+		"@prisma/orm-postgres": "8.0.0-rc.21"
 	}
 }
