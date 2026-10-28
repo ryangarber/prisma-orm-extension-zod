@@ -1,3 +1,13 @@
+## v0.2.13 (2026-10-28)
+
+### Bug Fixes
+
+- bump tsdown to typescript 7.0.2 hotfix ([86a5a3b](https://github.com/ryangarber/prisma-orm-extension-zod/commit/86a5a3ba055a2a42f7f1c22a7d47b5ddacfe38eb))
+
+### Other
+
+- upgrade @prisma/orm-* to 8.0.0-rc.21 ([1222801](https://github.com/ryangarber/prisma-orm-extension-zod/commit/12228015bd042db5a60b14016284971f5908f420))
+
 ## v0.2.12 (2026-10-23)
 
 ### Other
