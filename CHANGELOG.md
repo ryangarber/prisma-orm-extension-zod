@@ -1,3 +1,9 @@
+## v0.2.14 (2026-10-31)
+
+### Other
+
+- upgrade @prisma/orm-* to 8.0.0-rc.22 ([5b5c58f](https://github.com/ryangarber/prisma-orm-extension-zod/commit/5b5c58f0710f936426f1001d39aa0e054ee08785))
+
 ## v0.2.13 (2026-10-28)
 
 ### Bug Fixes

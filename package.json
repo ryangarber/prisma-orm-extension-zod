@@ -1,6 +1,6 @@
 {
 	"name": "@ryangarber/prisma-orm-extension-zod",
-	"version": "0.2.13",
+	"version": "0.2.14",
 	"description": "Support for Zod types and validation in Prisma 8.",
 	"type": "module",
 	"sideEffects": false,
