@@ -39,12 +39,12 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.6.3",
-		"@prisma/orm-postgres": "8.0.0-rc.21",
-		"@prisma/orm-toolchain": "8.0.0-rc.21",
-		"@types/node": "^26.6.5",
+		"@biomejs/biome": "^2.6.4",
+		"@prisma/orm-postgres": "8.0.0-rc.22",
+		"@prisma/orm-toolchain": "8.0.0-rc.22",
+		"@types/node": "^26.6.6",
 		"temporal-zod": "0.8.0",
-		"tsdown": "^0.23.3",
+		"tsdown": "^0.23.4",
 		"typescript": "^7.0.2",
 		"vitest": "^5.0.5"
 	},
@@ -61,6 +61,6 @@
 		"zod": "^4.6.7"
 	},
 	"peerDependencies": {
-		"@prisma/orm-postgres": "8.0.0-rc.21"
+		"@prisma/orm-postgres": "8.0.0-rc.22"
 	}
 }

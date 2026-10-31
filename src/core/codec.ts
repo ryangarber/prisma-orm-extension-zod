@@ -68,6 +68,7 @@ export class ZodCodec<S extends $ZodType> extends CodecImpl<
 
 export class ZodDescriptor extends PostgresCodecDescriptor<ZodTypeParams> {
 	override readonly dataType = pgJsonb.id;
+	override readonly jsonType = "any";
 	override readonly codecId = ZOD_CODEC_ID;
 	override readonly traits = ["equality"] as const;
 	override readonly paramsSchema = z.object({
