@@ -40,8 +40,8 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.6.4",
-		"@prisma/orm-postgres": "8.0.0-rc.22",
-		"@prisma/orm-toolchain": "8.0.0-rc.22",
+		"@prisma/orm-postgres": "8.0.0-rc.23",
+		"@prisma/orm-toolchain": "8.0.0-rc.23",
 		"@types/node": "^26.6.6",
 		"temporal-zod": "0.8.0",
 		"tsdown": "^0.23.4",
@@ -61,6 +61,6 @@
 		"zod": "^4.6.7"
 	},
 	"peerDependencies": {
-		"@prisma/orm-postgres": "8.0.0-rc.22"
+		"@prisma/orm-postgres": "8.0.0-rc.23"
 	}
 }
