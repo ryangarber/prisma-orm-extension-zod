@@ -3,7 +3,7 @@
 Zod 4 validation and separate write/read types for PostgreSQL `jsonb` columns, based on Prisma's official Arktype extension. Currently `@prisma/orm-postgres@8.0.0-rc.23`.
 
 ```sh
-pnpm add @ryangarber/prisma-orm-extension-zod zod @prisma/orm-postgres@8.0.0-rc.23
+pnpm add prisma-orm-extension-zod zod @prisma/orm-postgres@8.0.0-rc.23
 pnpm add -D @prisma/orm-toolchain@8.0.0-rc.23
 ```
 
@@ -20,8 +20,8 @@ export const Profile = z.object({
 
 ```ts
 // zod-extension.ts
-import { createZodExtension, defineZodSchema } from "@ryangarber/prisma-orm-extension-zod/column-types";
-import type { CodecTypes } from "@ryangarber/prisma-orm-extension-zod/codec-types";
+import { createZodExtension, defineZodSchema } from "prisma-orm-extension-zod/column-types";
+import type { CodecTypes } from "prisma-orm-extension-zod/codec-types";
 import { Profile } from "./schemas";
 
 const schemas = { Profile: defineZodSchema(Profile) };
