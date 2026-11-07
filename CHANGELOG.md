@@ -1,3 +1,14 @@
+## v0.3.0 (2026-11-07)
+
+### Breaking Changes
+
+- rename package, bump runtime and deps ([6b15634](https://github.com/ryangarber/prisma-orm-extension-zod/commit/6b1563458e83f1bec96ad95c14d45a25ccb28015))
+
+### Other
+
+- update readme ([12d47da](https://github.com/ryangarber/prisma-orm-extension-zod/commit/12d47daeee1aacaf5f4fd97dd11d6f42c6ee699b))
+- **deps:** update Prisma packages ([c060104](https://github.com/ryangarber/prisma-orm-extension-zod/commit/c06010411b51ecd5864b53c24a956bd4589ecd48))
+
 ## v0.2.14 (2026-10-31)
 
 ### Other
