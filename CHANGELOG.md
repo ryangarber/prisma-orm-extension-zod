@@ -1,3 +1,9 @@
+## v0.3.1 (2026-11-09)
+
+### Bug Fixes
+
+- replace null bytes to prevent postgres error on save ([4457e95](https://github.com/ryangarber/prisma-orm-extension-zod/commit/4457e956d53f8e0ec33569c1100ad4d6ebf09544))
+
 ## v0.3.0 (2026-11-07)
 
 ### Breaking Changes

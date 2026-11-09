@@ -1,6 +1,6 @@
 {
 	"name": "prisma-orm-extension-zod",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"description": "Zod schemas for Prisma 8.",
 	"type": "module",
 	"sideEffects": false,
