@@ -148,3 +148,18 @@ it("omits undefined object fields using native JSON semantics", async () => {
 	expect(codec.toDataTypeValue(value).value).toBe(value);
 	expect(await codec.fromWire("{}")).toStrictEqual({});
 });
+
+it("writes NUL, which jsonb can't hold, as U+FFFD", async () => {
+	const { codec } = setup(z.record(z.string(), z.array(z.string())));
+	const value = { "a\0b": ["out\0put", "clean"], ok: ["fine"] };
+	const wire = await codec.toWire(value);
+	expect(wire).not.toContain("\\u0000");
+	await expect(codec.fromWire(wire)).resolves.toEqual({
+		"a�b": ["out�put", "clean"],
+		ok: ["fine"],
+	});
+	// What was given is left as it was.
+	expect(value["a\0b"][0]).toBe("out\0put");
+	const clean = { ok: ["fine"] };
+	expect(codec.fromDataTypeValue(codec.toDataTypeValue(clean))).toEqual(clean);
+});

@@ -26,6 +26,49 @@ if (!jsonbDescriptor)
 	throw new Error("Prisma PostgreSQL JSONB codec is unavailable");
 const jsonb = jsonbDescriptor.factory(undefined)({ name: "zod/json" });
 
+/**
+ * A value as `jsonb` can hold it. PostgreSQL text can't hold NUL, so `jsonb`
+ * refuses `\u0000` anywhere ("unsupported Unicode escape sequence"), and with
+ * it the whole write: it is stored as U+FFFD instead, as an invalid byte reads.
+ * Copied only where it holds one.
+ */
+export function toStorable<T>(value: T, seen = new WeakSet<object>()): T {
+	if (typeof value === "string")
+		return (value.includes("\0") ? value.replaceAll("\0", "�") : value) as T;
+	// A cycle is left for serializing to refuse.
+	if (value && typeof value === "object") {
+		if (seen.has(value)) return value;
+		seen.add(value);
+	}
+	if (Array.isArray(value)) {
+		let copy: unknown[] | undefined;
+		value.forEach((item, index) => {
+			const next = toStorable(item, seen);
+			if (!Object.is(next, item)) {
+				copy ??= [...value];
+				copy[index] = next;
+			}
+		});
+		return (copy ?? value) as T;
+	}
+	if (value && typeof value === "object" && !ArrayBuffer.isView(value)) {
+		// Only plain JSON objects: anything else serializes on its own terms.
+		const proto = Object.getPrototypeOf(value);
+		if (proto !== Object.prototype && proto !== null) return value;
+		let copy: Record<string, unknown> | undefined;
+		for (const [key, item] of Object.entries(value)) {
+			const nextKey = toStorable(key);
+			const next = toStorable(item, seen);
+			if (nextKey === key && Object.is(next, item)) continue;
+			copy ??= { ...(value as Record<string, unknown>) };
+			if (nextKey !== key) delete copy[key];
+			copy[nextKey] = next;
+		}
+		return (copy ?? value) as T;
+	}
+	return value;
+}
+
 export const ZOD_CODEC_ID = "zod/json@1" as const;
 export const ZOD_NATIVE_TYPE = "jsonb" as const;
 export type ZodTypeParams = {
@@ -51,7 +94,7 @@ export class ZodCodec<S extends $ZodType> extends CodecImpl<
 	private readonly readSchema: $ZodType;
 	async toWire(value: input<S>): Promise<string> {
 		await parseAsync(this.binding.schema, value);
-		return jsonb.toWire(value, {}) as Promise<string>;
+		return jsonb.toWire(toStorable(value), {}) as Promise<string>;
 	}
 	async fromWire(wire: string | JsonValue): Promise<output<S>> {
 		const value = await jsonb.fromWire(wire, {});
@@ -59,7 +102,7 @@ export class ZodCodec<S extends $ZodType> extends CodecImpl<
 	}
 	toDataTypeValue(value: input<S>): DataTypeValue {
 		parse(this.binding.schema, value);
-		return jsonb.toDataTypeValue(value);
+		return jsonb.toDataTypeValue(toStorable(value));
 	}
 	fromDataTypeValue(value: DataTypeValue): output<S> {
 		return parse(this.readSchema, value.value) as output<S>;

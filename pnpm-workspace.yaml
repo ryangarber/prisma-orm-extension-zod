@@ -2,4 +2,3 @@ allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
   - '@prisma/*'
-  - tsdown@0.23.3
