@@ -1,3 +1,9 @@
+## v0.3.2 (2026-11-18)
+
+### Other
+
+- **deps:** update Prisma packages ([9d10133](https://github.com/ryangarber/prisma-orm-extension-zod/commit/9d101338fa9daaf8472f3f0c23f17019afee8852))
+
 ## v0.3.1 (2026-11-09)
 
 ### Bug Fixes
