@@ -30,10 +30,6 @@ it.each(["ts", "prisma"])(
 				},
 			}),
 		);
-		const config = defineConfig({
-			contract: "./contract.ts",
-			extensions: [extension.control],
-		});
 		const directory = await mkdtemp(join(process.cwd(), ".zod-emit-"));
 		try {
 			await writeFile(
@@ -47,22 +43,19 @@ model User {
 `,
 			);
 			const result = await executeContractEmit({
-				config:
-					format === "prisma"
-						? defineConfig({
-								contract: join(directory, "contract.prisma"),
-								extensions: [extension.control],
-							})
-						: {
-								...config,
-								contract: {
+				config: defineConfig({
+					contract:
+						format === "prisma"
+							? join(directory, "contract.prisma")
+							: {
 									source: {
 										format: "typescript",
 										load: async () => ok(contract),
 									},
-									output: join(directory, "contract.json"),
 								},
-							},
+					output: directory,
+					extensions: [extension.control],
+				}),
 				cwd: process.cwd(),
 			});
 			const dts = (await readFile(result.files.dts, "utf8"))
