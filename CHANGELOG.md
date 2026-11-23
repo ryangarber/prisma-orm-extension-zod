@@ -1,3 +1,9 @@
+## v0.3.3 (2026-11-23)
+
+### Other
+
+- **deps:** upgrade prisma to v8.0.0-rc.25 ([d8c3f2d](https://github.com/ryangarber/prisma-orm-extension-zod/commit/d8c3f2d3ae97d16e8af1e1a00a366b2f03d8f1ec))
+
 ## v0.3.2 (2026-11-18)
 
 ### Other
